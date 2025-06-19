@@ -1,77 +1,69 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, CircularProgress } from '@mui/material';
 
 // Layout components
-import Layout from './components/layout/Layout';
+import MainLayout from './components/layouts/MainLayout';
 
-// Page components
+// Pages
 import Dashboard from './pages/Dashboard';
-import GenerateIdeas from './pages/GenerateIdeas';
-import SavedIdeas from './pages/SavedIdeas';
+import Ideas from './pages/Ideas';
 import Calendar from './pages/Calendar';
-import TrendAnalytics from './pages/TrendAnalytics';
+import Trends from './pages/Trends';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
-import Profile from './pages/Profile';
+import IdeaGenerator from './pages/IdeaGenerator';
+import IdeaDetail from './pages/IdeaDetail';
 
-// Slices
-import { checkAuth } from './store/slices/authSlice';
+// Redux actions
+import { loadUser } from './features/auth/authSlice';
 
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useSelector((state) => state.auth);
-  
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-  
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
-
-function App() {
+const App = () => {
   const dispatch = useDispatch();
-  const { isLoading } = useSelector((state) => state.auth);
-  
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+
   useEffect(() => {
-    dispatch(checkAuth());
+    // Load user data if we have a token
+    dispatch(loadUser());
   }, [dispatch]);
-  
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-  
+
+  // Protected route component
+  const ProtectedRoute = ({ children }) => {
+    if (loading) return <div>Loading...</div>;
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    return children;
+  };
+
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
-      }>
+
+      {/* Protected routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Dashboard />} />
-        <Route path="generate" element={<GenerateIdeas />} />
-        <Route path="saved" element={<SavedIdeas />} />
+        <Route path="ideas" element={<Ideas />} />
+        <Route path="ideas/:id" element={<IdeaDetail />} />
+        <Route path="generate" element={<IdeaGenerator />} />
         <Route path="calendar" element={<Calendar />} />
-        <Route path="trends" element={<TrendAnalytics />} />
-        <Route path="profile" element={<Profile />} />
+        <Route path="trends" element={<Trends />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
-      
+
+      {/* 404 route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
-}
+};
 
 export default App;
